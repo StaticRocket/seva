@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'websocket.dart';
+import 'dart:async';
+import 'dart:html';
+import 'dart:convert';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 void main() {
   runApp( MaterialApp(
@@ -14,6 +19,27 @@ class WebProxy extends  StatefulWidget {
 class _WebProxyState extends State<WebProxy> {
 
   TextEditingController textarea = TextEditingController();
+  bool waiting_on_response1 = false;
+  
+  Future<WebSocketCommand> response_handler() async {
+    // catch the response code and update state accordingly
+    setState(() {
+      waiting_on_response1 = true;
+    });
+    String response = await stream.first;
+    setState(() {
+      waiting_on_response1 = false;
+    });
+    return WebSocketCommand.from_json(jsonDecode(response));
+  }
+
+  Future<void> write_proxy(String myProxy) async {
+    // writes proxy 
+    print(myProxy);
+    WebSocketCommand.outbound(myProxy, []).send();
+    WebSocketCommand command = await response_handler();
+    print('Done..');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,9 +69,9 @@ class _WebProxyState extends State<WebProxy> {
                  
                    ElevatedButton(
                      onPressed: (){
-                         print(textarea.text);
+                         write_proxy(textarea.text);
                      }, 
-                     child: const Text("Save")
+                     child: const Text("Apply")
                     )
                ],
              ),
