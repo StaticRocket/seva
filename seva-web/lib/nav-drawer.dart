@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'webproxy_page.dart';
+import 'settings_page.dart';
 
 class NavDrawer extends StatelessWidget {
   @override
@@ -16,8 +16,8 @@ class NavDrawer extends StatelessWidget {
               style: TextStyle(color: Colors.white, fontSize: 25),
             ),
             decoration: BoxDecoration(
-                color: Colors.red,
-                ),
+              color: Colors.red,
+            ),
           ),
           ListTile(
             leading: Icon(Icons.input),
@@ -27,13 +27,14 @@ class NavDrawer extends StatelessWidget {
           ListTile(
             leading: Icon(Icons.settings),
             title: Text('Web Proxy Settings'),
-            onTap: () { 
-		            Navigator.push(
-                	context,
-                	MaterialPageRoute(builder: (context) => WebProxy(), 
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => WebProxy(),
                 ),
               );
-	          },
+            },
           ),
           ListTile(
             leading: Icon(Icons.border_color),
@@ -43,7 +44,8 @@ class NavDrawer extends StatelessWidget {
           ListTile(
             leading: Icon(Icons.close),
             title: Text('Close'),
-            onTap: () =>  {},  // Probably use exit(0) or SystemNavigator.pop() if needed
+            onTap: () =>
+                {}, // Probably use exit(0) or SystemNavigator.pop() if needed
           ),
         ],
       ),

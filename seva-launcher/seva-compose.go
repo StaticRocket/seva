@@ -10,7 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-
+    "io/ioutil" 
 	"github.com/melbahja/got"
 )
 
@@ -45,11 +45,17 @@ func start_app(command WebSocketCommand) WebSocketCommand {
 	return command
 }
 
-func web_proxy(command WebSocketCommand) WebSocketCommand {
+func save_settings(command WebSocketCommand) WebSocketCommand {
 	log.Println("I'm in")
 	
 	// Add "sysconfig/docker file" updation code here
-    
+    err := ioutil.WriteFile("/etc/sysconfig/docker", []byte(command.Command), 0666)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+	command.Response = append(command.Response, strings.Split("write-done", "\n")...)
+	log.Printf("|\nwrite-done\n")
 	return command
 }
 

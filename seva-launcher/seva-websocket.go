@@ -56,8 +56,9 @@ func websocket_controller(w http.ResponseWriter, r *http.Request) {
 			command = get_app(command)
 		case "is_running":
 			command = is_running(command)
-		case "web_proxy":
-			command = web_proxy(command)
+		case "save_settings":
+			print("in")
+			command = save_settings(command)
 		}
 
 		json, err := json.Marshal(command)
