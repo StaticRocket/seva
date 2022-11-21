@@ -57,7 +57,6 @@ func websocket_controller(w http.ResponseWriter, r *http.Request) {
 		case "is_running":
 			command = is_running(command)
 		case "save_settings":
-			print("in")
 			command = save_settings(command)
 		}
 

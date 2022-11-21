@@ -6,13 +6,21 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/melbahja/got"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
-    "io/ioutil" 
-	"github.com/melbahja/got"
 )
+
+type proxyContainer struct {
+	command   string
+	arguments []string
+	exit_code int
+	response  []string
+}
 
 type Containers []struct {
 	ID         string `json:"ID"`
@@ -45,20 +53,104 @@ func start_app(command WebSocketCommand) WebSocketCommand {
 	return command
 }
 
-func save_settings(command WebSocketCommand) WebSocketCommand {
-	log.Println("I'm in")
-	
-	// Add "sysconfig/docker file" updation code here
-    err := ioutil.WriteFile("/etc/sysconfig/docker", []byte(command.Command), 0666)
-    if err != nil {
-        log.Fatal(err)
-    }
+func update_sysconfig(proxy_containers proxyContainer) {
+	var http_ string = proxy_containers.arguments[0]["http_proxy"]
+	var no_proxy_ string = proxy_containers.arguments[0]["no_proxy"]
 
-	command.Response = append(command.Response, strings.Split("write-done", "\n")...)
-	log.Printf("|\nwrite-done\n")
-	return command
+	final_sysconfig_proxy := fmt.Sprintf("export HTTPS_PROXY=\"%s\"\nexport HTTPS_PROXY=\"%s\"\nexport NO_PROXY=\"%s\"", http_, http_, no_proxy_)
+
+	fmt.Println(final_sysconfig_proxy)
+
+	// Write the proxy setting
+	err := ioutil.WriteFile("/etc/sysconfig/docker", []byte(final_sysconfig_proxy), 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Restart the Docker daemon after setting up the proxy
+	cmd := exec.Command("service", "docker", "restart")
+	err := cmd.Run()
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
+func update_systemd(proxy_containers proxyContainer) {
+
+	// Create /etc/systemd/system/docker.service.d directory structure
+	if err := os.MkdirAll("/etc/systemd/system/docker.service.d", os.ModePerm); err != nil {
+		log.Fatal(err)
+	}
+
+	// Create a file http-proxy.conf in /etc/systemd/system/docker.service.d
+	myfile, e := os.Create("/etc/systemd/system/docker.service.d/http-proxy.conf")
+	if e != nil {
+		log.Fatal(e)
+	}
+
+	var http_ string = proxy_containers.arguments[0]["http_proxy"]
+	var no_proxy_ string = proxy_containers.arguments[0]["no_proxy"]
+
+	final_systemd_proxy := fmt.Sprintf("[Service]\nEnvironment=\"HTTP_PROXY=%s\"\nEnvironment=\"HTTPS_PROXY=%s\"\nEnvironment=\"NO_PROXY=%s\"\n", http_, http_, no_proxy_)
+
+	fmt.Println(final_systemd_proxy)
+
+	// Write the proxy setting
+	err_ := ioutil.WriteFile("/etc/systemd/system/docker.service.d/http-proxy.conf", []byte(final_systemd_proxy), 0644)
+	if err_ != nil {
+		log.Fatal(err_)
+	}
+
+	// Flush changes and restart Docker
+	cmd := exec.Command("systemctl", "daemon-reload")
+	err := cmd.Run()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cmd1 := exec.Command("systemctl", "restart", "docker")
+	err1 := cmd1.Run()
+
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	myfile.Close()
+}
+
+func save_settings(command WebSocketCommand) WebSocketCommand {
+	log.Println("Started Applying Docker Proxy Settings")
+
+	var proxy_containers proxyContainer
+	err = json.Unmarshal([]byte(command), &proxy_containers)
+	if err != nil {
+		log.Println("Failed to de-serialize the JSON String!")
+		exit(1)
+	}
+
+	// Checks if File /etc/sysconfig/docker exists
+	if _, err := os.Stat("/etc/sysconfig/docker"); err == nil {
+		update_sysconfig(proxy_containers)
+	} else {
+		update_systemd(proxy_containers)
+	}
+
+	// Setting up Environment Variables
+	var http_ string = proxy_containers.arguments[0]["http_proxy"]
+	var no_proxy_ string = proxy_containers.arguments[0]["no_proxy"]
+
+	os.Setenv("HTTP_PROXY", http_)
+	os.Setenv("http_proxy", http_)
+	os.Setenv("HTTPs_PROXY", http_)
+	os.Setenv("https_proxy", http_)
+	os.Setenv("no_proxy", no_proxy_)
+
+	command.Response = append(command.Response, "write-done")
+	log.Println("Applied Docker Proxy Settings")
+	return command
+}
 
 func stop_app(command WebSocketCommand) WebSocketCommand {
 	log.Println("Stopping selected app")

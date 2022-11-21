@@ -31,35 +31,47 @@ class _WebProxyState extends State<WebProxy> {
   }
 
   Future<void> write_proxy(var serialized_settings) async {
-    // writes proxy
-    print(serialized_settings);
+    //print(serialized_settings);
     WebSocketCommand.outbound("save_settings", [serialized_settings]).send();
     WebSocketCommand command = await response_handler();
+    if (command.response.length > 0) {}
+  }
+
+  bool isValidUrl(var proxy_url) {
+    var urlPattern =
+        r"(http|https|socks4|socks5)://[A-Za-z0-9\-._~:/?#\[\]@!$&'\(\)*+,;%=]+";
+    var regExp = new RegExp(urlPattern, caseSensitive: false);
+    if (!regExp.hasMatch(proxy_url)) {
+      return false;
+    }
+
+    return true;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Text("Web-Proxy Settings"),
+          title: const Text("Settings"),
           backgroundColor: Colors.redAccent,
         ),
         body: Form(
           key: _form, //assigning key to form
           child: Column(
             children: [
+              const SizedBox(height: 40),
               TextFormField(
                 controller: http_textarea,
                 keyboardType: TextInputType.multiline,
-                maxLines: 5,
+                maxLines: 1,
                 decoration: const InputDecoration(
                     hintText: "Enter your Http Proxy Settings",
                     focusedBorder: OutlineInputBorder(
                         borderSide:
                             BorderSide(width: 1, color: Colors.redAccent))),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter some text';
+                  if (value != null && isValidUrl(http_textarea.text)) {
+                    return 'Please Enter Valid URL';
                   }
                   return null;
                 },
@@ -74,12 +86,6 @@ class _WebProxyState extends State<WebProxy> {
                     focusedBorder: OutlineInputBorder(
                         borderSide:
                             BorderSide(width: 1, color: Colors.redAccent))),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter some text';
-                  }
-                  return null;
-                },
               ),
             ],
           ),

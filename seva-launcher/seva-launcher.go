@@ -3,10 +3,12 @@ package main
 import (
 	"embed"
 	"flag"
+	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -22,6 +24,9 @@ var store_url = "https://raw.githubusercontent.com/StaticRocket/seva-apps/main"
 var addr = flag.String("addr", "0.0.0.0:8000", "http service address")
 var no_browser = flag.Bool("no-browser", false, "do not launch browser")
 var docker_browser = flag.Bool("docker-browser", false, "force use of docker browser")
+var http_proxy = flag.String("http_proxy", "", "use to set http proxy")
+var no_proxy = flag.String("no_proxy", "", "use to set no-proxy")
+
 var container_id_list [2]string
 var docker_compose string
 
@@ -30,6 +35,9 @@ var content embed.FS
 
 //go:embed docker-compose
 var docker_compose_bin []byte
+
+// Flags to check proxy validation
+var is_http_proxy bool = true
 
 func is_docker_compose_installed() bool {
 	cmd := exec.Command("docker-compose", "-v")
@@ -166,10 +174,117 @@ func check_env_vars() {
 	exit(1)
 }
 
+func update_sysconfig_cli() {
+
+	var final_sysconfig_proxy_cli string
+
+	// if http_proxy is not valid then just apply no_proxy
+	if is_http_proxy == false {
+		final_sysconfig_proxy_cli := fmt.Sprintf("export NO_PROXY=\"%s\"", *no_proxy)
+	} else {
+		final_sysconfig_proxy_cli := fmt.Sprintf("export HTTPS_PROXY=\"%s\"\nexport HTTPS_PROXY=\"%s\"\nexport NO_PROXY=\"%s\"", *http_proxy, *http_proxy, *no_proxy)
+	}
+
+	fmt.Println(final_sysconfig_proxy_cli)
+
+	// Write the proxy setting
+	err := ioutil.WriteFile("/etc/sysconfig/docker", []byte(final_sysconfig_proxy_cli), 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Restart the Docker daemon after setting up the proxy
+	cmd := exec.Command("service", "docker", "restart")
+	err := cmd.Run()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func update_systemd_cli() {
+	// Create /etc/systemd/system/docker.service.d directory structure
+	if err := os.MkdirAll("/etc/systemd/system/docker.service.d", os.ModePerm); err != nil {
+		log.Fatal(err)
+	}
+
+	// Create a file http-proxy.conf in /etc/systemd/system/docker.service.d
+	myfile, e := os.Create("/etc/systemd/system/docker.service.d/http-proxy.conf")
+	if e != nil {
+		log.Fatal(e)
+	}
+
+	var final_systemd_proxy_cli string
+
+	// if http_proxy is not valid then just apply no_proxy
+	if is_http_proxy == false {
+		final_systemd_proxy_cli := fmt.Sprintf("[Service]\nEnvironment=\"NO_PROXY=%s\"\n", *no_proxy)
+	} else {
+		final_systemd_proxy_cli := fmt.Sprintf("[Service]\nEnvironment=\"HTTP_PROXY=%s\"\nEnvironment=\"HTTPS_PROXY=%s\"\nEnvironment=\"NO_PROXY=%s\"\n", *http_proxy, *http_proxy, *no_proxy)
+	}
+
+	fmt.Println(final_systemd_proxy_cli)
+
+	// Write the proxy setting
+	err_ := ioutil.WriteFile("/etc/systemd/system/docker.service.d/http-proxy.conf", []byte(final_systemd_proxy_cli), 0644)
+	if err_ != nil {
+		log.Fatal(err_)
+	}
+
+	// Flush changes and restart Docker
+	cmd := exec.Command("systemctl", "daemon-reload")
+	err := cmd.Run()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cmd1 := exec.Command("systemctl", "restart", "docker")
+	err1 := cmd1.Run()
+
+	if err1 != nil {
+		log.Fatal(err1)
+	}
+
+	myfile.Close()
+}
+
+func validate_proxy() {
+	u, err := url.ParseRequestURI(*http_proxy)
+	if err != nil {
+		log.Println("Invalid http proxy. Hence not applying it.")
+		is_http_proxy := false
+	}
+}
+
+func setup_proxy() {
+	// Setting up Environment Variables
+	// If http_proxy is valid apply changes to Environment variable
+	if is_http_proxy == true {
+		os.Setenv("HTTP_PROXY", *http_proxy)
+		os.Setenv("http_proxy", *http_proxy)
+		os.Setenv("HTTPs_PROXY", *http_proxy)
+		os.Setenv("https_proxy", *http_proxy)
+	}
+
+	os.Setenv("no_proxy", *no_proxy)
+
+	// Checks if File /etc/sysconfig/docker exists
+	if _, err := os.Stat("/etc/sysconfig/docker"); err == nil {
+		update_sysconfig_cli()
+	} else {
+		update_systemd_cli()
+	}
+}
+
 func main() {
 	setup_exit_handler()
 	check_env_vars()
 	flag.Parse()
+
+	validate_proxy()
+	setup_proxy()
 
 	log.Println("Setting up working directory")
 	setup_working_directory()

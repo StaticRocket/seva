@@ -36,17 +36,6 @@ class NavDrawer extends StatelessWidget {
               );
             },
           ),
-          ListTile(
-            leading: Icon(Icons.border_color),
-            title: Text('Feedback'),
-            onTap: () => {}, // Maybe add something later
-          ),
-          ListTile(
-            leading: Icon(Icons.close),
-            title: Text('Close'),
-            onTap: () =>
-                {}, // Probably use exit(0) or SystemNavigator.pop() if needed
-          ),
         ],
       ),
     );
