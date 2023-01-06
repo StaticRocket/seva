@@ -30,11 +30,12 @@ class _WebProxyState extends State<WebProxy> {
     return WebSocketCommand.from_json(jsonDecode(response));
   }
 
-  Future<void> write_proxy(var serialized_settings) async {
-    //print(serialized_settings);
+  Future<void> save_settings(var serialized_settings) async {
     WebSocketCommand.outbound("save_settings", [serialized_settings]).send();
     WebSocketCommand command = await response_handler();
-    if (command.response.length > 0) {}
+    if (command.response[0] == '1') {
+	    // TODO: Error handling
+    }
   }
 
   bool isValidUrl(var proxy_url) {
@@ -53,7 +54,6 @@ class _WebProxyState extends State<WebProxy> {
     return Scaffold(
         appBar: AppBar(
           title: const Text("Settings"),
-          backgroundColor: Colors.redAccent,
         ),
         body: Form(
           key: _form, //assigning key to form
@@ -101,12 +101,12 @@ class _WebProxyState extends State<WebProxy> {
                         content: Text('Applying your Proxy Settings')),
                   );
 
-                  var proxy_settings = {
+                  var settings = {
                     "http_proxy": http_textarea.text,
                     "no_proxy": no_proxy_textarea.text
                   };
-                  var serialized_settings = json.encode(proxy_settings);
-                  write_proxy(serialized_settings);
+                  var serialized_settings = json.encode(settings);
+                  save_settings(serialized_settings);
                 }
               },
               tooltip: 'Save',
