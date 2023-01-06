@@ -11,8 +11,8 @@ class WebProxy extends StatefulWidget {
 }
 
 class _WebProxyState extends State<WebProxy> {
-  var http_textarea = TextEditingController();
-  var no_proxy_textarea = TextEditingController();
+  var proxy_http = TextEditingController();
+  var proxy_no = TextEditingController();
 
   final _form = GlobalKey<FormState>();
 
@@ -34,19 +34,15 @@ class _WebProxyState extends State<WebProxy> {
     WebSocketCommand.outbound("save_settings", [serialized_settings]).send();
     WebSocketCommand command = await response_handler();
     if (command.response[0] == '1') {
-	    // TODO: Error handling
+      // TODO: Error handling
     }
   }
 
   bool isValidUrl(var proxy_url) {
     var urlPattern =
         r"(http|https|socks4|socks5)://[A-Za-z0-9\-._~:/?#\[\]@!$&'\(\)*+,;%=]+";
-    var regExp = new RegExp(urlPattern, caseSensitive: false);
-    if (!regExp.hasMatch(proxy_url)) {
-      return false;
-    }
-
-    return true;
+    var regExp = new RegExp(urlPattern);
+    return regExp.hasMatch(proxy_url);
   }
 
   @override
@@ -61,7 +57,7 @@ class _WebProxyState extends State<WebProxy> {
             children: [
               const SizedBox(height: 40),
               TextFormField(
-                controller: http_textarea,
+                controller: proxy_http,
                 keyboardType: TextInputType.multiline,
                 maxLines: 1,
                 decoration: const InputDecoration(
@@ -70,7 +66,7 @@ class _WebProxyState extends State<WebProxy> {
                         borderSide:
                             BorderSide(width: 1, color: Colors.redAccent))),
                 validator: (value) {
-                  if (value != null && isValidUrl(http_textarea.text)) {
+                  if (value != null && isValidUrl(proxy_http.text)) {
                     return 'Please Enter Valid URL';
                   }
                   return null;
@@ -78,7 +74,7 @@ class _WebProxyState extends State<WebProxy> {
               ),
               const SizedBox(height: 60),
               TextFormField(
-                controller: no_proxy_textarea,
+                controller: proxy_no,
                 keyboardType: TextInputType.multiline,
                 maxLines: 1,
                 decoration: const InputDecoration(
@@ -97,13 +93,14 @@ class _WebProxyState extends State<WebProxy> {
               onPressed: () {
                 if (_form.currentState!.validate()) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Applying your Proxy Settings')),
+                    const SnackBar(content: Text('Applying settings...')),
                   );
 
                   var settings = {
-                    "http_proxy": http_textarea.text,
-                    "no_proxy": no_proxy_textarea.text
+                    "https_proxy": proxy_http.text,
+                    "http_proxy": proxy_http.text,
+                    "ftp_proxy": proxy_http.text,
+                    "no_proxy": proxy_no.text
                   };
                   var serialized_settings = json.encode(settings);
                   save_settings(serialized_settings);
