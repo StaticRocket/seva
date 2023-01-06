@@ -5,7 +5,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'url_builder.dart';
 import 'websocket.dart';
-import 'nav-drawer.dart';
+import 'navigation_menu.dart';
 
 // store url, must point to page with proper message listener
 final String store_url = 'http://${host_name}:8001/';
@@ -93,7 +93,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        drawer: NavDrawer(),   
+        drawer: NavigationMenu(),
         appBar: AppBar(
           title: Text(widget.title),
         ),

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'settings_page.dart';
 
-class NavDrawer extends StatelessWidget {
+class NavigationMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -12,7 +11,7 @@ class NavDrawer extends StatelessWidget {
         children: <Widget>[
           DrawerHeader(
             child: Text(
-              'Side menu',
+              'Seva',
               style: TextStyle(color: Colors.white, fontSize: 25),
             ),
             decoration: BoxDecoration(
@@ -20,13 +19,13 @@ class NavDrawer extends StatelessWidget {
             ),
           ),
           ListTile(
-            leading: Icon(Icons.input),
+            leading: Icon(Icons.home),
             title: Text('Home'),
             onTap: () => {Navigator.of(context).pop()},
           ),
           ListTile(
             leading: Icon(Icons.settings),
-            title: Text('Web Proxy Settings'),
+            title: Text('Settings'),
             onTap: () {
               Navigator.push(
                 context,
