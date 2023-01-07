@@ -61,15 +61,15 @@ class _WebProxyState extends State<WebProxy> {
                 keyboardType: TextInputType.multiline,
                 maxLines: 1,
                 decoration: const InputDecoration(
-                    hintText: "Enter your Http Proxy Settings",
-                    focusedBorder: OutlineInputBorder(
-                        borderSide:
-                            BorderSide(width: 1, color: Colors.redAccent))),
+                  hintText: "Enter your Http Proxy Settings",
+                ),
                 validator: (value) {
-                  if (value != null && isValidUrl(proxy_http.text)) {
-                    return 'Please Enter Valid URL';
+                  if (value == null ||
+                      value.isEmpty ||
+                      isValidUrl(proxy_http.text)) {
+                    return null;
                   }
-                  return null;
+                  return 'Please Enter Valid URL';
                 },
               ),
               const SizedBox(height: 60),
@@ -78,10 +78,8 @@ class _WebProxyState extends State<WebProxy> {
                 keyboardType: TextInputType.multiline,
                 maxLines: 1,
                 decoration: const InputDecoration(
-                    hintText: "Enter your No-Proxy Settings",
-                    focusedBorder: OutlineInputBorder(
-                        borderSide:
-                            BorderSide(width: 1, color: Colors.redAccent))),
+                  hintText: "Enter your No-Proxy Settings",
+                ),
               ),
             ],
           ),
