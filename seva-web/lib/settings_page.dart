@@ -45,6 +45,50 @@ class _WebProxyState extends State<WebProxy> {
     return regExp.hasMatch(proxy_url);
   }
 
+  Widget proxy_settings(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(8.0),
+      child: Column(
+        children: <Widget>[
+          Text(
+            'Proxy Settings',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          Container(
+            padding: EdgeInsets.all(8.0),
+            child: TextFormField(
+              controller: proxy_http,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(
+                labelText:
+                    "Enter a HTTP/SOCKS URL or IP to proxy traffic through",
+              ),
+              validator: (value) {
+                if (value == null ||
+                    value.isEmpty ||
+                    isValidUrl(proxy_http.text)) {
+                  return null;
+                }
+                return "Please enter a valid URL or IP";
+              },
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.all(8.0),
+            child: TextFormField(
+              controller: proxy_no,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(
+                labelText:
+                    "Enter URLs / IPs that should not be routed through the proxy",
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -53,36 +97,7 @@ class _WebProxyState extends State<WebProxy> {
         ),
         body: Form(
           key: _form, //assigning key to form
-          child: Column(
-            children: [
-              const SizedBox(height: 40),
-              TextFormField(
-                controller: proxy_http,
-                keyboardType: TextInputType.multiline,
-                maxLines: 1,
-                decoration: const InputDecoration(
-                  hintText: "Enter your Http Proxy Settings",
-                ),
-                validator: (value) {
-                  if (value == null ||
-                      value.isEmpty ||
-                      isValidUrl(proxy_http.text)) {
-                    return null;
-                  }
-                  return 'Please Enter Valid URL';
-                },
-              ),
-              const SizedBox(height: 60),
-              TextFormField(
-                controller: proxy_no,
-                keyboardType: TextInputType.multiline,
-                maxLines: 1,
-                decoration: const InputDecoration(
-                  hintText: "Enter your No-Proxy Settings",
-                ),
-              ),
-            ],
-          ),
+          child: Column(children: [proxy_settings(context)]),
         ),
         floatingActionButton: Column(
           mainAxisAlignment: MainAxisAlignment.end,
